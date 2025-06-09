@@ -1,42 +1,89 @@
 
 # 📦 Azure Function - Gerador de Código de Barras
 
-Esta Azure Function foi desenvolvida para processar requisições HTTP contendo dados de pagamento, gerar um código de barras e publicar o resultado em uma fila do Azure Service Bus.
+## Visão Geral
 
-## 🚀 Funcionalidade
+Este projeto implementa uma Azure Function responsável por processar dados de pagamento enviados via requisição HTTP, gerar informações simuladas de código de barras e enviar essas informações para uma fila no Azure Service Bus.
 
-- Recebe uma requisição `POST` contendo os seguintes dados:
-  - `valor`: valor numérico do boleto.
-  - `dataVencimento`: data de vencimento no formato `yyyy-MM-dd`.
-  - `barcodeData`: dados adicionais necessários para gerar o código de barras.
-- Valida os dados recebidos.
-- Gera um objeto com:
-  - `barcode`
-  - `valorOriginal`
-  - `DataVencimento`
-  - `ImageBase64`
-- Envia esse objeto para a fila `gerador-codigo-barras` no Azure Service Bus.
+Essa função é ideal para integrar processos de geração e controle de boletos ou qualquer tipo de cobrança que utilize códigos de barras, podendo ser acoplada a sistemas financeiros, ERPs, aplicativos ou serviços de backoffice.
 
 ---
 
-## 🔧 Configuração
+## 🚀 Funcionalidades
 
-### Variáveis de Ambiente
-
-Certifique-se de definir a seguinte variável no ambiente da Azure Function:
-
-| Variável                    | Descrição                                   |
-|----------------------------|---------------------------------------------|
-| `ServiceBusConnectionString` | String de conexão do Azure Service Bus.     |
+- ✅ Recebe requisições HTTP no método `POST` com conteúdo JSON.
+- ✅ Valida os dados obrigatórios da requisição: `valor`, `dataVencimento` e `barcodeData`.
+- ✅ Valida formato da data e valor numérico com limite de casas decimais.
+- ✅ Gera resposta simulada com:
+  - Código de barras (`barcode`)
+  - Valor original (`valorOriginal`)
+  - Data de vencimento (`DataVencimento`)
+  - Representação da imagem em base64 (`ImageBase64`)
+- ✅ Envia o objeto resultante para uma fila do Azure Service Bus (`gerador-codigo-barras`).
 
 ---
 
-## 📥 Exemplo de Requisição
+## 🛠️ Tecnologias Utilizadas
 
-```http
-POST /api/barcode-generator HTTP/1.1
-Content-Type: application/json
+- [Azure Functions](https://learn.microsoft.com/azure/azure-functions/)
+- [C#](https://learn.microsoft.com/dotnet/csharp/)
+- [Azure.Messaging.ServiceBus](https://learn.microsoft.com/dotnet/api/overview/azure/messaging.servicebus-readme)
+- [Newtonsoft.Json](https://www.newtonsoft.com/json)
+- Azure SDKs e SDK de Logging
 
+---
+
+## 📦 Requisitos
+
+- Conta no Azure com Service Bus provisionado
+- Azure Functions configurado no ambiente desejado (consumo, premium ou dedicado)
+- .NET 6 ou superior
+
+---
+
+## 🧩 Instalação e Execução Local
+
+1. Clone este repositório:
+```bash
+git clone https://github.com/vasconceloseverton/fnGeradorBoletosAzure.git
+cd seu-repositorio
+```
+
+2. Configure o arquivo `local.settings.json`:
+
+```json
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ServiceBusConnectionString": "<sua-connection-string>"
+  }
+}
+```
+
+3. Execute localmente com o Core Tools:
+```bash
+func start
+```
+
+---
+
+## 🔧 Configurações de Ambiente
+
+| Variável                      | Descrição                                                                 |
+|------------------------------|---------------------------------------------------------------------------|
+| `ServiceBusConnectionString` | String de conexão com o Azure Service Bus (SharedAccessKey ou Managed Id) |
+
+---
+
+## 📥 Exemplo de Requisição HTTP
+
+**Endpoint:** `/api/barcode-generator`  
+**Método:** `POST`  
+**Content-Type:** `application/json`
+
+```json
 {
   "valor": "123.45",
   "dataVencimento": "2025-07-15",
@@ -48,26 +95,24 @@ Content-Type: application/json
 
 ## ✅ Respostas Esperadas
 
-### Sucesso
+### ✅ Sucesso (200 OK)
 
-```json
+```text
 "Welcome to Azure Functions!"
 ```
 
-### Erros Comuns
+### ❌ Erros Comuns
 
-| Código HTTP | Mensagem                                   | Causa                                           |
-|-------------|--------------------------------------------|------------------------------------------------|
-| `400`       | "Invalid input data."                      | Algum campo obrigatório está ausente ou vazio. |
-| `400`       | "Invalid date format for dataVencimento."  | Formato da data incorreto.                     |
-| `400`       | "Invalid value format for valor."          | Valor não numérico ou fora do intervalo.       |
-| `500`       | Erro interno.                              | Exceção inesperada durante o processamento.    |
+| Código | Motivo                                              | Solução                                   |
+|--------|------------------------------------------------------|-------------------------------------------|
+| 400    | "Invalid input data."                                | Verifique se todos os campos estão ok     |
+| 400    | "Invalid date format for dataVencimento."            | Use formato `yyyy-MM-dd`                  |
+| 400    | "Invalid value format for valor."                    | Use um número decimal válido              |
+| 500    | "An error occurred while generating the barcode."    | Verifique os logs para mais informações   |
 
 ---
 
-## 📤 Envio ao Azure Service Bus
-
-Após a validação, o seguinte payload é enviado para a fila `gerador-codigo-barras`:
+## 📤 Exemplo de Payload Enviado para a Fila do Service Bus
 
 ```json
 {
@@ -78,32 +123,21 @@ Após a validação, o seguinte payload é enviado para a fila `gerador-codigo-b
 }
 ```
 
----
-
-## 🛠️ Tecnologias Utilizadas
-
-- C#
-- Azure Functions
-- Azure Service Bus
-- Newtonsoft.Json
-- Azure.Messaging.ServiceBus
-
----
-
-## 📁 Estrutura da Solução
-
-```
-fnGeradorBoletosAzure/
-│
-├── GeradorCodigoBarras.cs       # Função principal
-├── host.json                    # Configuração da Azure Function
-├── local.settings.json          # Configurações locais (não subir para o Git)
-└── README.md                    # Este documento
-```
-
----
 
 ## 📝 Observações
 
-- Este projeto é um exemplo e ainda possui valores estáticos para o código de barras e imagem. A geração real deve ser implementada conforme necessário.
-- A função retorna apenas uma string de boas-vindas, mas o resultado real é enviado pela fila.
+- O código de barras e imagem são gerados de forma simulada (mock).
+- O envio real do boleto, PDF ou validações adicionais não fazem parte desta função.
+- Pode ser integrado facilmente com filas, bancos de dados e APIs externas para uma solução completa.
+
+---
+
+## 📬 Contato
+
+Para dúvidas ou sugestões, entre em contato com o mantenedor do projeto ou abra uma issue.
+
+---
+
+## 🧾 Licença
+
+Este projeto está licenciado sob a [MIT License](LICENSE).
